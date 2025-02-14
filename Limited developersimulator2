@@ -1,0 +1,412 @@
+local Players = game:GetService("Players") 
+local LocalPlayer = Players.LocalPlayer -- Mendapatkan LocalPlayer dengan benar
+
+-- Memuat Library Orion
+local OrionLib = loadstring(game:HttpGet("https://raw.githubusercontent.com/jensonhirst/Orion/main/source"))()
+
+-- Membuat jendela UI
+local Window = OrionLib:MakeWindow({
+    Name = "Script Hub",
+    HidePremium = false,
+    SaveConfig = true,
+    ConfigFolder = "OrionTest"
+})
+
+-- Membuat Tab dalam UI
+local Tab = Window:MakeTab({
+    Name = "Menu",
+    Icon = "rbxassetid://4483345998",
+    PremiumOnly = false
+})
+
+-- Menambahkan Section ke dalam Tab
+local Section = Tab:AddSection({
+    Name = "menu 1"
+})
+
+
+local player = game.Players.LocalPlayer
+local teleportEnabled = false  -- Status toggle teleportasi
+local character = player.Character or player.CharacterAdded:Wait()
+
+-- Fungsi teleportasi
+local function teleportToBBasic()
+    while teleportEnabled do
+        character = player.Character  -- Update karakter setelah respawn
+
+        for _, obj in ipairs(workspace:GetDescendants()) do
+            if obj:IsA("Model") and obj.Name == "Add" then
+                for _, child in ipairs(obj:GetDescendants()) do
+                    if child:IsA("BasePart") and child.Name == "BBasic" then
+                        print("BBasic ditemukan! Teleportasi ke:", child:GetFullName())
+
+                        -- Teleportasi karakter ke posisi BBasic
+                        local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
+                        if humanoidRootPart then
+                            humanoidRootPart.CFrame = child.CFrame + Vector3.new(0, 5, 0) -- Agar tidak terjebak dalam part
+                        end
+
+                        wait(1) -- Beri jeda sebelum mencari lagi
+                    end
+                end
+            end
+        end
+        wait(0.5) -- Jeda sebelum mengulang pencarian
+    end
+end
+
+-- Event untuk mendeteksi jika karakter respawn
+player.CharacterAdded:Connect(function(newCharacter)
+    character = newCharacter  -- Update karakter baru
+    wait(1)  -- Beri waktu agar karakter benar-benar respawn
+
+    if teleportEnabled then
+        teleportToBBasic() -- Jalankan ulang teleportasi jika masih aktif
+    end
+end)
+
+-- Toggle untuk mengaktifkan/mematikan teleportasi
+Tab:AddToggle({
+	Name = "Auto BBasic",
+	Default = false,
+	Callback = function(Value)
+		teleportEnabled = Value  -- Set nilai toggle
+		print("Teleport status:", teleportEnabled)
+
+		if teleportEnabled then
+			teleportToBBasic() -- Jalankan teleportasi jika toggle aktif
+		end
+	end    
+})
+
+
+
+local player = game.Players.LocalPlayer
+local teleportEnabled = false  -- Status toggle teleportasi
+local character = player.Character or player.CharacterAdded:Wait()
+
+-- Fungsi teleportasi
+local function teleportToBBasic()
+    while teleportEnabled do
+        character = player.Character  -- Update karakter setelah respawn
+
+        for _, obj in ipairs(workspace:GetDescendants()) do
+            if obj:IsA("Model") and obj.Name == "Add" then
+                for _, child in ipairs(obj:GetDescendants()) do
+                    if child:IsA("BasePart") and child.Name == "BMega" then
+                        print("BBasic ditemukan! Teleportasi ke:", child:GetFullName())
+
+                        -- Teleportasi karakter ke posisi BBasic
+                        local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
+                        if humanoidRootPart then
+                            humanoidRootPart.CFrame = child.CFrame + Vector3.new(0, 5, 0) -- Agar tidak terjebak dalam part
+                        end
+
+                        wait(1) -- Beri jeda sebelum mencari lagi
+                    end
+                end
+            end
+        end
+        wait(0.5) -- Jeda sebelum mengulang pencarian
+    end
+end
+
+-- Event untuk mendeteksi jika karakter respawn
+player.CharacterAdded:Connect(function(newCharacter)
+    character = newCharacter  -- Update karakter baru
+    wait(1)  -- Beri waktu agar karakter benar-benar respawn
+
+    if teleportEnabled then
+        teleportToBBasic() -- Jalankan ulang teleportasi jika masih aktif
+    end
+end)
+
+-- Toggle untuk mengaktifkan/mematikan teleportasi
+Tab:AddToggle({
+	Name = "Auto BMega",
+	Default = false,
+	Callback = function(Value)
+		teleportEnabled = Value  -- Set nilai toggle
+		print("Teleport status:", teleportEnabled)
+
+		if teleportEnabled then
+			teleportToBBasic() -- Jalankan teleportasi jika toggle aktif
+		end
+	end    
+})
+
+
+
+local player = game.Players.LocalPlayer
+local teleportEnabled = false  -- Status toggle teleportasi
+local character = player.Character or player.CharacterAdded:Wait()
+
+-- Fungsi teleportasi
+local function teleportToBBasic()
+    while teleportEnabled do
+        character = player.Character  -- Update karakter setelah respawn
+
+        for _, obj in ipairs(workspace:GetDescendants()) do
+            if obj:IsA("Model") and obj.Name == "Add" then
+                for _, child in ipairs(obj:GetDescendants()) do
+                    if child:IsA("BasePart") and child.Name == "BUltra" then
+                        print("BBasic ditemukan! Teleportasi ke:", child:GetFullName())
+
+                        -- Teleportasi karakter ke posisi BBasic
+                        local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
+                        if humanoidRootPart then
+                            humanoidRootPart.CFrame = child.CFrame + Vector3.new(0, 5, 0) -- Agar tidak terjebak dalam part
+                        end
+
+                        wait(1) -- Beri jeda sebelum mencari lagi
+                    end
+                end
+            end
+        end
+        wait(0.5) -- Jeda sebelum mengulang pencarian
+    end
+end
+
+-- Event untuk mendeteksi jika karakter respawn
+player.CharacterAdded:Connect(function(newCharacter)
+    character = newCharacter  -- Update karakter baru
+    wait(1)  -- Beri waktu agar karakter benar-benar respawn
+
+    if teleportEnabled then
+        teleportToBBasic() -- Jalankan ulang teleportasi jika masih aktif
+    end
+end)
+
+-- Toggle untuk mengaktifkan/mematikan teleportasi
+Tab:AddToggle({
+	Name = "Auto BUltra",
+	Default = false,
+	Callback = function(Value)
+		teleportEnabled = Value  -- Set nilai toggle
+		print("Teleport status:", teleportEnabled)
+
+		if teleportEnabled then
+			teleportToBBasic() -- Jalankan teleportasi jika toggle aktif
+		end
+	end    
+})
+
+
+
+
+local Tab = Window:MakeTab({
+	Name = "teleport",
+	Icon = "rbxassetid://4483345998",
+	PremiumOnly = false
+})
+
+--[[
+Name = <string> - The name of the tab.
+Icon = <string> - The icon of the tab.
+PremiumOnly = <bool> - Makes the tab accessible to Sirus Premium users only.
+]]
+
+
+
+local player = game.Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+
+-- CFrame tujuan teleportasi
+local targetCFrame = CFrame.new(
+    -7.63092136, 3.79802823, -69.7814713, 
+    0.989843726, -5.65501672e-08, -0.142159894, 
+    6.20230267e-08, 1, 3.40667903e-08, 
+    0.142159894, -4.25379874e-08, 0.989843726
+)
+
+-- Fungsi teleportasi
+local function teleportPlayer()
+    character = player.Character or player.CharacterAdded:Wait() -- Pastikan karakter ada
+    local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
+
+    if humanoidRootPart then
+        humanoidRootPart.CFrame = targetCFrame
+        print("Teleportasi berhasil ke:", targetCFrame.Position)
+    else
+        warn("HumanoidRootPart tidak ditemukan!")
+    end
+end
+
+-- Tambahkan tombol untuk teleportasi
+Tab:AddButton({
+	Name = "world 1",
+	Callback = function()
+      		print("Teleportasi ke World 1!")
+      		teleportPlayer() -- Panggil fungsi teleportasi saat tombol ditekan
+  	end    
+})
+
+
+local player = game.Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+
+-- CFrame tujuan teleportasi (World 1)
+local targetCFrame = CFrame.new(
+    288.9133, 3.83645272, -36.179245, 
+    1, -3.68165609e-09, 7.49791058e-14, 
+    3.68165609e-09, 1, -3.34489458e-09, 
+    -7.49667933e-14, 3.34489458e-09, 1
+)
+
+-- Fungsi teleportasi
+local function teleportPlayer()
+    character = player.Character or player.CharacterAdded:Wait() -- Pastikan karakter ada
+    local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
+
+    if humanoidRootPart then
+        humanoidRootPart.CFrame = targetCFrame
+        print("Teleportasi berhasil ke:", targetCFrame.Position)
+    else
+        warn("HumanoidRootPart tidak ditemukan!")
+    end
+end
+
+-- Tambahkan tombol untuk teleportasi
+Tab:AddButton({
+	Name = "world 2",
+	Callback = function()
+      		print("Teleportasi ke World 1!")
+      		teleportPlayer() -- Panggil fungsi teleportasi saat tombol ditekan
+  	end    
+})
+
+
+local player = game.Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+
+-- CFrame tujuan teleportasi (World 1)
+local targetCFrame = CFrame.new(
+    -73.5451126, 4.63645172, 317.278473, 
+    1, 1.95810976e-08, -2.60991146e-14, 
+    -1.95810976e-08, 1, -5.19002299e-08, 
+    2.50828512e-14, 5.19002299e-08, 1
+)
+
+-- Fungsi teleportasi
+local function teleportPlayer()
+    character = player.Character or player.CharacterAdded:Wait() -- Pastikan karakter ada
+    local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
+
+    if humanoidRootPart then
+        humanoidRootPart.CFrame = targetCFrame
+        print("Teleportasi berhasil ke:", targetCFrame.Position)
+    else
+        warn("HumanoidRootPart tidak ditemukan!")
+    end
+end
+
+-- Tambahkan tombol untuk teleportasi
+Tab:AddButton({
+	Name = "world 3",
+	Callback = function()
+      		print("Teleportasi ke World 1!")
+      		teleportPlayer() -- Panggil fungsi teleportasi saat tombol ditekan
+  	end    
+})
+
+
+
+local player = game.Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+
+-- CFrame tujuan teleportasi (World 1)
+local targetCFrame = CFrame.new(
+    325.023895, 3.83645368, 324.344635, 
+    1, 9.73062626e-08, -2.46596566e-14, 
+    -9.73062626e-08, 1, -5.12126803e-08, 
+    1.96763416e-14, 5.12126803e-08, 1
+)
+
+-- Fungsi teleportasi
+local function teleportPlayer()
+    character = player.Character or player.CharacterAdded:Wait() -- Pastikan karakter ada
+    local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
+
+    if humanoidRootPart then
+        humanoidRootPart.CFrame = targetCFrame
+        print("Teleportasi berhasil ke:", targetCFrame.Position)
+    else
+        warn("HumanoidRootPart tidak ditemukan!")
+    end
+end
+
+-- Tambahkan tombol untuk teleportasi
+Tab:AddButton({
+	Name = "world 4",
+	Callback = function()
+      		print("Teleportasi ke World 1!")
+      		teleportPlayer() -- Panggil fungsi teleportasi saat tombol ditekan
+  	end    
+})
+
+local player = game.Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+
+-- CFrame tujuan teleportasi (World 1)
+local targetCFrame = CFrame.new(
+    -346.859375, 48.8537216, -63.1396141, 
+    -0.371306419, 1.81135853e-08, -0.928510368, 
+    -4.70419472e-08, 1, 3.83200458e-08, 
+    0.928510368, 5.7907414e-08, -0.371306419
+)
+
+-- Fungsi teleportasi
+local function teleportPlayer()
+    character = player.Character or player.CharacterAdded:Wait() -- Pastikan karakter ada
+    local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
+
+    if humanoidRootPart then
+        humanoidRootPart.CFrame = targetCFrame
+        print("Teleportasi berhasil ke:", targetCFrame.Position)
+    else
+        warn("HumanoidRootPart tidak ditemukan!")
+    end
+end
+
+-- Tambahkan tombol untuk teleportasi
+Tab:AddButton({
+	Name = "world 5",
+	Callback = function()
+      		print("Teleportasi ke World 1!")
+      		teleportPlayer() -- Panggil fungsi teleportasi saat tombol ditekan
+  	end    
+})
+
+
+local player = game.Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+
+-- CFrame tujuan teleportasi (World 1)
+local targetCFrame = CFrame.new(
+    -278.777161, 84.198288, -335.072021, 
+    0.680044413, 9.03651487e-10, -0.733170867, 
+    2.1593527e-09, 1, 3.23540839e-09, 
+    0.733170867, -3.78339582e-09, 0.680044413
+)
+
+-- Fungsi teleportasi
+local function teleportPlayer()
+    character = player.Character or player.CharacterAdded:Wait() -- Pastikan karakter ada
+    local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
+
+    if humanoidRootPart then
+        humanoidRootPart.CFrame = targetCFrame
+        print("Teleportasi berhasil ke:", targetCFrame.Position)
+    else
+        warn("HumanoidRootPart tidak ditemukan!")
+    end
+end
+
+-- Tambahkan tombol untuk teleportasi
+Tab:AddButton({
+	Name = "world 6",
+	Callback = function()
+      		print("Teleportasi ke World 1!")
+      		teleportPlayer() -- Panggil fungsi teleportasi saat tombol ditekan
+  	end    
+})
