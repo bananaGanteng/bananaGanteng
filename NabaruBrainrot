@@ -1,1 +1,274 @@
-n
+local CoreGui = game:GetService("CoreGui")
+
+if CoreGui:FindFirstChild("FaDhenModernMini") then
+
+    CoreGui.FaDhenModernMini:Destroy()
+
+end
+
+local gui = Instance.new("ScreenGui", CoreGui)
+
+gui.Name = "FaDhenModernMini"
+
+gui.ResetOnSpawn = false
+
+local mainFrame = Instance.new("Frame")
+
+mainFrame.Size = UDim2.new(0, 220, 0, 230)
+
+mainFrame.Position = UDim2.new(0.5, -110, 0.5, -130)
+
+mainFrame.BackgroundColor3 = Color3.fromRGB(33, 33, 33)
+
+mainFrame.Parent = gui
+
+mainFrame.Active = true
+
+mainFrame.Draggable = true
+
+mainFrame.Visible = false
+
+Instance.new("UICorner", mainFrame).CornerRadius = UDim.new(0, 10)
+
+local stroke = Instance.new("UIStroke", mainFrame)
+
+stroke.Thickness = 2
+
+stroke.Color = Color3.fromRGB(100, 100, 100)
+
+stroke.Transparency = 0
+
+local shadow = Instance.new("ImageLabel", mainFrame)
+
+shadow.AnchorPoint = Vector2.new(0.5, 0.5)
+
+shadow.Position = UDim2.new(0.5, 0, 0.5, 0)
+
+shadow.Size = UDim2.new(1, 20, 1, 20)
+
+shadow.Image = "rbxassetid://5028857084"
+
+shadow.ImageColor3 = Color3.new(0, 0, 0)
+
+shadow.ImageTransparency = 0.7
+
+shadow.ScaleType = Enum.ScaleType.Slice
+
+shadow.SliceCenter = Rect.new(24, 24, 276, 276)
+
+shadow.BackgroundTransparency = 1
+
+shadow.ZIndex = 0
+
+local title = Instance.new("TextLabel", mainFrame)
+
+title.Size = UDim2.new(1, 0, 0, 28)
+
+title.BackgroundTransparency = 1
+
+title.Text = "YT FaDhenGaming"
+
+title.Font = Enum.Font.GothamBold
+
+title.TextSize = 13
+
+title.TextColor3 = Color3.fromRGB(255, 255, 255)
+
+local tabContainer = Instance.new("Frame", mainFrame)
+
+tabContainer.Size = UDim2.new(1, -16, 0, 24)
+
+tabContainer.Position = UDim2.new(0, 8, 0, 30)
+
+tabContainer.BackgroundTransparency = 1
+
+local tabLayout = Instance.new("UIListLayout", tabContainer)
+
+tabLayout.FillDirection = Enum.FillDirection.Horizontal
+
+tabLayout.Padding = UDim.new(0, 5)
+
+tabLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+
+local contentFrame = Instance.new("Frame", mainFrame)
+
+contentFrame.Position = UDim2.new(0, 8, 0, 60)
+
+contentFrame.Size = UDim2.new(1, -16, 1, -70)
+
+contentFrame.BackgroundTransparency = 1
+
+local tabs = {}
+
+local function createTab(name)
+
+	local tab = Instance.new("Frame", contentFrame)	tab.Size = UDim2.new(1, 0, 1, 0)
+
+	tab.BackgroundTransparency = 1
+
+	tab.Visible = false
+
+	local layout = Instance.new("UIListLayout", tab)
+
+	layout.Padding = UDim.new(0, 6)
+
+	layout.VerticalAlignment = Enum.VerticalAlignment.Top
+
+	layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+
+	tabs[name] = tab
+
+	return tab
+
+end
+
+local mainTab = createTab("Main")
+
+local visualTab = createTab("Visual")
+
+local miscTab = createTab("Misc")
+
+local function switchTab(name)
+
+	for tabName, tab in pairs(tabs) do
+
+		tab.Visible = (tabName == name)
+
+	end
+
+end
+
+local function createTabButton(text, tabName)
+
+	local btn = Instance.new("TextButton", tabContainer)
+
+	btn.Size = UDim2.new(0, 60, 0, 22)
+
+	btn.Text = text
+
+	btn.Font = Enum.Font.Gotham
+
+	btn.TextSize = 13
+
+	btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+
+	btn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+
+	Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 6)
+
+	btn.MouseButton1Click:Connect(function()
+
+		switchTab(tabName)
+
+	end)
+
+end
+
+createTabButton("Main", "Main")
+
+createTabButton("Visual", "Visual")
+
+createTabButton("Misc", "Misc")
+
+local function AddToggle(tab, data)
+
+	local btn = Instance.new("TextButton", tab)
+
+	btn.Size = UDim2.new(1, -10, 0, 28)
+
+	btn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+
+	btn.TextColor3 = Color3.fromRGB(230, 230, 230)
+
+	btn.Font = Enum.Font.Gotham
+
+	btn.TextSize = 15
+
+	btn.TextXAlignment = Enum.TextXAlignment.Left
+
+	btn.Text = data.Name
+
+	btn.AutoButtonColor = false
+
+	Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 8)
+
+	local toggle = Instance.new("Frame", btn)
+
+	toggle.Size = UDim2.new(0, 12, 0, 12)
+
+	toggle.Position = UDim2.new(1, -20, 0.5, -6)
+
+	toggle.BackgroundColor3 = Color3.fromRGB(130, 130, 130)
+
+	toggle.BorderSizePixel = 0
+
+	Instance.new("UICorner", toggle).CornerRadius = UDim.new(1, 0)
+
+	local state = false
+
+	btn.MouseButton1Click:Connect(function()
+
+		state = not state
+
+		toggle.BackgroundColor3 = state and Color3.fromRGB(0, 200, 100) or Color3.fromRGB(130, 130, 130)
+
+		if data.Callback then
+
+			data.Callback(state)
+
+		end
+
+	end)
+
+end
+
+local player = game.Players.LocalPlayer
+
+local ragdollConnection = nil
+
+local function anchorCharacter(char, state)
+
+	for _, part in pairs(char:GetDescendants()) do
+
+		if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" then
+
+			part.Anchored = state
+
+		end
+
+	end
+
+end
+
+local function handleRagdoll(char)
+
+	local humanoid = char:WaitForChild("Humanoid", 5)
+
+	if not humanoid then return end
+
+	
+
+	ragdollConnection = humanoid.StateChanged:Connect(function(_, newState)
+
+		if newState == Enum.HumanoidStateType.Physics 
+
+		or newState == Enum.HumanoidStateType.Ragdoll 
+
+		or newState == Enum.HumanoidStateType.FallingDown then
+
+			anchorCharacter(char, true)
+
+			wait(0.01) 
+
+			anchorCharacter(char, false)
+
+			humanoid:ChangeState(Enum.HumanoidStateType.GettingUp)
+
+		end
+
+	end)
+
+end
+
+
+-----------potongan
