@@ -1,0 +1,189 @@
+-- LockBase Script (upload ke GitHub)
+_G.LockBase = _G.LockBase or {}
+
+local player = game.Players.LocalPlayer
+local RunService = game:GetService("RunService")
+
+local toggleActive = false
+local debounce = false
+local resetFromScript = false
+local countdownConn = nil
+local plots = workspace:WaitForChild("Plots")
+local base = nil
+local purchasesFolder = nil
+
+-- Cari Base
+local function findBase()
+    local userLower = string.lower(player.Name)
+    local displayLower = string.lower(player.DisplayName)
+    for _, model in ipairs(plots:GetChildren()) do
+        if model:IsA("Model") then
+            for _, obj in ipairs(model:GetDescendants()) do
+                if obj:IsA("TextLabel") then
+                    local txt = string.lower(obj.Text)
+                    if string.find(txt, userLower, 1, true) or string.find(txt, displayLower, 1, true) then
+                        base = model
+                        purchasesFolder = base:FindFirstChild("Purchases")
+                        return
+                    end
+                end
+            end
+        end
+    end
+end
+findBase()
+
+-- findObjects
+local function findObjects()
+    if not purchasesFolder then return nil, nil end
+    local rem, hit = nil, nil
+    local char = player.Character or player.CharacterAdded:Wait()
+    local hrp = char:FindFirstChild("HumanoidRootPart")
+    if not hrp then return nil, nil end
+    for _, obj in ipairs(purchasesFolder:GetDescendants()) do
+        if obj:IsA("TextLabel") and obj.Name == "RemainingTime" then
+            rem = obj
+        elseif obj:IsA("BasePart") and obj.Name == "Hitbox" then
+            local distance = (obj.Position - hrp.Position).Magnitude
+            if distance >= 47 and distance <= 60 then
+                hit = obj
+            end
+        end
+    end
+    return rem, hit
+end
+
+-- wiggleWhileCountdown
+local function wiggleWhileCountdown(hrp, label, hitbox)
+    local countdownSet = { ["4s"]=true, ["3s"]=true, ["2s"]=true, ["1s"]=true, ["0s"]=true }
+    local char = hrp.Parent
+    local hum = char:FindFirstChildOfClass("Humanoid")
+    if not hum then return end
+    local centerPos = hitbox and hitbox.Position or hrp.Position
+    local amplitude = 2
+    local radiusLock = 6
+    local direction = 1
+    local run = true
+    local originalAutoRotate = hum.AutoRotate
+    hum.AutoRotate = false
+    local function stillValid()
+        return run and hum and hum.Health>0 and label and label.Parent and countdownSet[label.Text]==true and toggleActive
+    end
+    task.spawn(function()
+        while stillValid() do
+            local target = centerPos + Vector3.new(direction*amplitude, 0, 0)
+            if hitbox and hitbox.Parent then
+                centerPos = hitbox.Position
+                target = centerPos + Vector3.new(direction*amplitude, 0, 0)
+            end
+            hum:MoveTo(target)
+            hum.MoveToFinished:Wait(0.55)
+            direction = -direction
+        end
+    end)
+    local hbConn
+    hbConn = RunService.Heartbeat:Connect(function()
+        if not stillValid() then
+            run=false
+            hbConn:Disconnect()
+            return
+        end
+        if hitbox and hitbox.Parent then
+            centerPos=hitbox.Position
+        end
+        if (hrp.Position-centerPos).Magnitude>radiusLock then
+            hrp.CFrame = CFrame.new(centerPos + Vector3.new(direction * amplitude * 0.5, 0, 0))
+        end
+    end)
+    task.spawn(function()
+        while stillValid() do task.wait(0.2) end
+        run=false
+        hum:Move(Vector3.new())
+        hum.AutoRotate=originalAutoRotate
+        if hbConn then hbConn:Disconnect() end
+    end)
+end
+
+-- walkToBase
+local function walkToBase(hitbox)
+    local char = player.Character or player.CharacterAdded:Wait()
+    local hrp = char:WaitForChild("HumanoidRootPart", 5)
+    local hum = char:WaitForChild("Humanoid", 5)
+    if not (hum and hrp and hitbox) then return end
+    local touched=false
+    local touchedConn
+    touchedConn=hitbox.Touched:Connect(function(part)
+        if part:IsDescendantOf(char) then
+            touched=true
+            touchedConn:Disconnect()
+            local countdownLabel, _ = findObjects()
+            if countdownLabel then
+                wiggleWhileCountdown(hrp, countdownLabel, hitbox)
+            end
+        end
+    end)
+    task.spawn(function()
+        while not touched and char and hum and hitbox and toggleActive do
+            hum:MoveTo(hitbox.Position)
+            task.wait(0.5)
+        end
+    end)
+end
+
+-- Countdown Loop
+local function startCountdownLoop()
+    if _G.LockBase._conn then return end
+    _G.LockBase._conn = RunService.RenderStepped:Connect(function()
+        if not toggleActive then return end
+        local char = player.Character or player.CharacterAdded:Wait()
+        local countdownLabel, hitboxPart = findObjects()
+        if countdownLabel and not debounce then
+            if countdownLabel.Text=="8s" or countdownLabel.Text=="6s" then
+                local hum = char:FindFirstChildOfClass("Humanoid")
+                if hum then
+                    debounce=true
+                    resetFromScript=true
+                    hum.Health=0
+                    task.spawn(function()
+                        player.CharacterAdded:Wait()
+                        local _, newHitbox = findObjects()
+                        if newHitbox and toggleActive then walkToBase(newHitbox) end
+                        task.delay(1, function() debounce=false end)
+                    end)
+                end
+            end
+        end
+    end)
+end
+
+local function stopCountdownLoop()
+    if _G.LockBase._conn then
+        _G.LockBase._conn:Disconnect()
+        _G.LockBase._conn = nil
+    end
+end
+
+-- Public Functions
+function _G.LockBase.Start()
+    toggleActive = true
+    debounce = true
+    resetFromScript = true
+    local char = player.Character
+    if char then
+        local hum = char:FindFirstChildOfClass("Humanoid")
+        if hum then hum.Health = 0 end
+    end
+    player.CharacterAdded:Wait()
+    task.delay(0.1, function()
+        local _, hitbox = findObjects()
+        if hitbox then walkToBase(hitbox) end
+        debounce=false
+        resetFromScript=false
+    end)
+    startCountdownLoop()
+end
+
+function _G.LockBase.Stop()
+    toggleActive = false
+    stopCountdownLoop()
+end
