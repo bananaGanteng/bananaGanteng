@@ -1,19 +1,55 @@
--- LockBase Script (upload ke GitHub)
-_G.LockBase = _G.LockBase or {}
+--// =============================== LockBase Optimized ===============================
+--// Anti-lag, full OFF cleanup, logic tetap sama.
+--// Upload file ini ke GitHub raw kamu. Lalu load lewat: loadstring(game:HttpGet(URL))()
 
+-- Matikan versi lama jika ada
+if _G.LockBase and typeof(_G.LockBase.Stop) == "function" then
+    pcall(_G.LockBase.Stop)
+end
+
+_G.LockBase = _G.LockBase or {}
+local LockBase = _G.LockBase
+
+--================== SERVICES & LOCALS ==================--
 local player = game.Players.LocalPlayer
 local RunService = game:GetService("RunService")
 
+local plots = workspace:WaitForChild("Plots")
+
+-- status
 local toggleActive = false
 local debounce = false
 local resetFromScript = false
-local countdownConn = nil
-local plots = workspace:WaitForChild("Plots")
-local base = nil
-local purchasesFolder = nil
 
--- Cari Base
+-- session token untuk batalkan thread lama saat Stop()
+local sessionId = 0
+
+-- refs
+local base -- Model plot milik player
+local purchasesFolder -- Folder di dalam base
+local remainingLabel -- TextLabel "RemainingTime"
+local hitboxes = {} -- {BasePart, ...}
+
+-- koneksi untuk dibersihkan
+local connections = {}
+
+local function bind(conn)
+    table.insert(connections, conn)
+    return conn
+end
+
+local function disconnectAll()
+    for i = #connections, 1, -1 do
+        local c = connections[i]
+        if c then pcall(function() c:Disconnect() end) end
+        connections[i] = nil
+    end
+end
+
+--================== BASE DETECTION ==================--
 local function findBase()
+    base = nil
+    purchasesFolder = nil
     local userLower = string.lower(player.Name)
     local displayLower = string.lower(player.DisplayName)
     for _, model in ipairs(plots:GetChildren()) do
@@ -33,32 +69,78 @@ local function findBase()
 end
 findBase()
 
--- findObjects
-local function findObjects()
-    if not purchasesFolder then return nil, nil end
-    local rem, hit = nil, nil
-    local char = player.Character or player.CharacterAdded:Wait()
-    local hrp = char:FindFirstChild("HumanoidRootPart")
-    if not hrp then return nil, nil end
+--================== CACHE PURCHASE OBJECTS ==================--
+local function rebuildCache()
+    remainingLabel = nil
+    table.clear(hitboxes)
+    if not purchasesFolder then return end
     for _, obj in ipairs(purchasesFolder:GetDescendants()) do
         if obj:IsA("TextLabel") and obj.Name == "RemainingTime" then
-            rem = obj
+            remainingLabel = obj
         elseif obj:IsA("BasePart") and obj.Name == "Hitbox" then
-            local distance = (obj.Position - hrp.Position).Magnitude
-            if distance >= 47 and distance <= 60 then
-                hit = obj
+            table.insert(hitboxes, obj)
+        end
+    end
+end
+rebuildCache()
+
+-- refresh cache kalau struktur Purchases berubah
+if purchasesFolder then
+    bind(purchasesFolder.DescendantAdded:Connect(function()
+        rebuildCache()
+    end))
+    bind(purchasesFolder.DescendantRemoving:Connect(function()
+        rebuildCache()
+    end))
+end
+
+--================== CHARACTER HELPERS ==================--
+local function getChar()
+    return player.Character
+        or player.CharacterAdded:Wait()
+end
+
+local function getHumanoid(char)
+    return char and char:FindFirstChildOfClass("Humanoid")
+end
+
+local function getHRP(char)
+    return char and char:FindFirstChild("HumanoidRootPart")
+end
+
+--================== FIND NEAREST VALID HITBOX ==================--
+local function getValidHitbox()
+    if #hitboxes == 0 then return nil end
+    local char = player.Character
+    if not char then return nil end
+    local hrp = getHRP(char)
+    if not hrp then return nil end
+
+    local best, bestDist
+    for _, hb in ipairs(hitboxes) do
+        if hb and hb.Parent then
+            local dist = (hb.Position - hrp.Position).Magnitude
+            -- gunakan batas sama seperti logic asli
+            if dist >= 47 and dist <= 60 then
+                if not bestDist or dist < bestDist then
+                    best = hb
+                    bestDist = dist
+                end
             end
         end
     end
-    return rem, hit
+    return best
 end
 
--- wiggleWhileCountdown
-local function wiggleWhileCountdown(hrp, label, hitbox)
-    local countdownSet = { ["4s"]=true, ["3s"]=true, ["2s"]=true, ["1s"]=true, ["0s"]=true }
+--================== WIGGLE WHILE COUNTDOWN ==================--
+local function wiggleWhileCountdown(session, hrp, label, hitbox)
+    local countdownSet = {["4s"]=true,["3s"]=true,["2s"]=true,["1s"]=true,["0s"]=true}
+    if not hrp or not hrp.Parent then return end
     local char = hrp.Parent
-    local hum = char:FindFirstChildOfClass("Humanoid")
+    local hum = getHumanoid(char)
     if not hum then return end
+    if not label then return end
+
     local centerPos = hitbox and hitbox.Position or hrp.Position
     local amplitude = 2
     local radiusLock = 6
@@ -66,124 +148,208 @@ local function wiggleWhileCountdown(hrp, label, hitbox)
     local run = true
     local originalAutoRotate = hum.AutoRotate
     hum.AutoRotate = false
+
     local function stillValid()
-        return run and hum and hum.Health>0 and label and label.Parent and countdownSet[label.Text]==true and toggleActive
+        return run
+            and session == sessionId
+            and toggleActive
+            and hum and hum.Parent
+            and hum.Health > 0
+            and label and label.Parent
+            and countdownSet[label.Text] == true
     end
+
+    -- gerak kiri kanan
     task.spawn(function()
         while stillValid() do
-            local target = centerPos + Vector3.new(direction*amplitude, 0, 0)
+            local target = centerPos + Vector3.new(direction * amplitude, 0, 0)
             if hitbox and hitbox.Parent then
                 centerPos = hitbox.Position
-                target = centerPos + Vector3.new(direction*amplitude, 0, 0)
+                target = centerPos + Vector3.new(direction * amplitude, 0, 0)
             end
             hum:MoveTo(target)
-            hum.MoveToFinished:Wait(0.55)
+            hum.MoveToFinished:Wait(0.55) -- sama dgn logic lama
             direction = -direction
         end
+        run = false
     end)
+
+    -- jaga radius (Heartbeat, tapi kita cek ringan)
     local hbConn
-    hbConn = RunService.Heartbeat:Connect(function()
+    hbConn = bind(RunService.Heartbeat:Connect(function()
         if not stillValid() then
-            run=false
-            hbConn:Disconnect()
+            run = false
+            if hbConn then hbConn:Disconnect() end
             return
         end
         if hitbox and hitbox.Parent then
-            centerPos=hitbox.Position
+            centerPos = hitbox.Position
         end
-        if (hrp.Position-centerPos).Magnitude>radiusLock then
+        if (hrp.Position - centerPos).Magnitude > radiusLock then
             hrp.CFrame = CFrame.new(centerPos + Vector3.new(direction * amplitude * 0.5, 0, 0))
         end
-    end)
+    end))
+
+    -- monitor akhir
     task.spawn(function()
-        while stillValid() do task.wait(0.2) end
-        run=false
-        hum:Move(Vector3.new())
-        hum.AutoRotate=originalAutoRotate
-        if hbConn then hbConn:Disconnect() end
+        while stillValid() do
+            task.wait(0.2)
+        end
+        run = false
+        if hum and hum.Parent then
+            hum:Move(Vector3.new())
+            hum.AutoRotate = originalAutoRotate
+        end
     end)
 end
 
--- walkToBase
-local function walkToBase(hitbox)
-    local char = player.Character or player.CharacterAdded:Wait()
-    local hrp = char:WaitForChild("HumanoidRootPart", 5)
-    local hum = char:WaitForChild("Humanoid", 5)
-    if not (hum and hrp and hitbox) then return end
-    local touched=false
+--================== WALK TO BASE ==================--
+local function walkToBase(session, hitbox)
+    if not hitbox then return end
+
+    local char = getChar()
+    local hrp = getHRP(char)
+    local hum = getHumanoid(char)
+    if not (hum and hrp) then return end
+
+    local touched = false
     local touchedConn
-    touchedConn=hitbox.Touched:Connect(function(part)
+    touchedConn = bind(hitbox.Touched:Connect(function(part)
+        if not toggleActive or session ~= sessionId then return end
         if part:IsDescendantOf(char) then
-            touched=true
-            touchedConn:Disconnect()
-            local countdownLabel, _ = findObjects()
-            if countdownLabel then
-                wiggleWhileCountdown(hrp, countdownLabel, hitbox)
+            touched = true
+            if touchedConn then touchedConn:Disconnect() end
+            local label = remainingLabel -- pakai cache
+            if label then
+                wiggleWhileCountdown(session, hrp, label, hitbox)
             end
         end
-    end)
+    end))
+
+    -- dorong karakter jalan tiap 0.5s (logic asli)
     task.spawn(function()
-        while not touched and char and hum and hitbox and toggleActive do
+        while not touched
+            and toggleActive
+            and session == sessionId
+            and hum
+            and hitbox
+            and hitbox.Parent
+        do
             hum:MoveTo(hitbox.Position)
             task.wait(0.5)
         end
     end)
 end
 
--- Countdown Loop
+--================== COUNTDOWN CHECK (RINGAN) ==================--
+-- Alih-alih RenderStepped (tiap frame), kita Heartbeat + timer interval.
 local function startCountdownLoop()
-    if _G.LockBase._conn then return end
-    _G.LockBase._conn = RunService.RenderStepped:Connect(function()
+    -- jangan double-connect
+    LockBase._conn = LockBase._conn or bind(RunService.Heartbeat:Connect(function(dt)
         if not toggleActive then return end
-        local char = player.Character or player.CharacterAdded:Wait()
-        local countdownLabel, hitboxPart = findObjects()
-        if countdownLabel and not debounce then
-            if countdownLabel.Text=="8s" or countdownLabel.Text=="6s" then
-                local hum = char:FindFirstChildOfClass("Humanoid")
-                if hum then
-                    debounce=true
-                    resetFromScript=true
-                    hum.Health=0
-                    task.spawn(function()
-                        player.CharacterAdded:Wait()
-                        local _, newHitbox = findObjects()
-                        if newHitbox and toggleActive then walkToBase(newHitbox) end
-                        task.delay(1, function() debounce=false end)
+
+        -- timer throttle
+        LockBase._acc = (LockBase._acc or 0) + dt
+        if LockBase._acc < 0.15 then return end
+        LockBase._acc = 0
+
+        local char = player.Character
+        if not char then return end
+        local label = remainingLabel
+        if not label or not label.Parent then return end
+
+        -- cek trigger 8s / 6s
+        local txt = label.Text
+        if (txt == "8s" or txt == "6s") and not debounce then
+            local hum = getHumanoid(char)
+            if hum then
+                local mySession = sessionId
+                debounce = true
+                resetFromScript = true
+                hum.Health = 0 -- reset
+
+                task.spawn(function()
+                    player.CharacterAdded:Wait()
+                    if mySession ~= sessionId or not toggleActive then
+                        debounce = false
+                        return
+                    end
+                    local newHitbox = getValidHitbox()
+                    if newHitbox then
+                        walkToBase(mySession, newHitbox)
+                    end
+                    task.delay(1, function()
+                        if mySession == sessionId then
+                            debounce = false
+                        end
                     end)
-                end
+                end)
             end
         end
-    end)
+    end))
 end
 
 local function stopCountdownLoop()
-    if _G.LockBase._conn then
-        _G.LockBase._conn:Disconnect()
-        _G.LockBase._conn = nil
+    if LockBase._conn then
+        LockBase._conn:Disconnect()
+        LockBase._conn = nil
     end
+    LockBase._acc = 0
 end
 
--- Public Functions
-function _G.LockBase.Start()
+--================== START / STOP PUBLIC ==================--
+function LockBase.Start()
+    -- bump session to invalidate thread lama
+    sessionId += 1
+
     toggleActive = true
     debounce = true
     resetFromScript = true
+
     local char = player.Character
     if char then
-        local hum = char:FindFirstChildOfClass("Humanoid")
+        local hum = getHumanoid(char)
         if hum then hum.Health = 0 end
     end
-    player.CharacterAdded:Wait()
-    task.delay(0.1, function()
-        local _, hitbox = findObjects()
-        if hitbox then walkToBase(hitbox) end
-        debounce=false
-        resetFromScript=false
+
+    -- tunggu respawn
+    task.spawn(function()
+        local mySession = sessionId
+        player.CharacterAdded:Wait()
+        if mySession ~= sessionId or not toggleActive then return end
+
+        task.delay(0.1, function()
+            if mySession ~= sessionId or not toggleActive then return end
+            local hitbox = getValidHitbox()
+            if hitbox then
+                walkToBase(mySession, hitbox)
+            end
+            if mySession == sessionId then
+                debounce = false
+                resetFromScript = false
+            end
+        end)
     end)
+
     startCountdownLoop()
 end
 
-function _G.LockBase.Stop()
+function LockBase.Stop()
     toggleActive = false
+    sessionId += 1 -- invalidate semua thread lama
+    debounce = false
+    resetFromScript = false
+
     stopCountdownLoop()
+    disconnectAll() -- heartbeat wiggle, touched, dsb
+
+    -- optional: hentikan gerak humanoid sekarang
+    local char = player.Character
+    if char then
+        local hum = getHumanoid(char)
+        if hum then hum:Move(Vector3.new()) end
+    end
 end
+
+-- tanda siap
+LockBase._ready = true
